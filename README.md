@@ -36,7 +36,7 @@ pip install https://github.com/AMD-hub/amd_pack/archive/refs/heads/main.zip
 
 ## Dependencies
 
-Aleatory relies heavily on
+amd-pack relies heavily on
 
 - ``numpy``  for random number generation
 - ``scipy`` and ``statsmodels`` for inference and stats.
@@ -45,25 +45,10 @@ Aleatory relies heavily on
 
 ## Compatibility
 
-Aleatory is tested on Python versions 3.8, 3.9, 3.10, and 3.11
+amd-pack is tested on Python versions 3.8, 3.9, 3.10, and 3.11
 
 
 ## Quick Start Guide
-
-### Introduction
-This guide provides step-by-step instructions on how to set up and run a simple stochastic model using the `aleatory` package. The example demonstrates how to create a model, simulate data, and perform calibration.
-
-### Requirements
-Ensure you have the following packages installed:
-- `aleatory` (for stochastic processes and path generation)
-- `numpy` (for numerical computations)
-- `matplotlib` (for plotting)
-
-### Installation
-Install the necessary packages using `pip`:
-```bash
-pip install aleatory numpy matplotlib
-```
 
 ### Steps to Follow
 
