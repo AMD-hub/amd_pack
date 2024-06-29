@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **_aleatory_** (/ˈeɪliətəri/) Python library provides functionality for simulating, calibrating and visualising
+The **_amd-pack_** Python library provides functionality for simulating, calibrating and visualising
 stochastic processes. More precisely, it introduces objects representing a number of continuous-time
 stochastic processes $X = (X_t : t\geq 0)$ and provides methods to:
 
