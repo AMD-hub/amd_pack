@@ -1,7 +1,4 @@
-# *aleatory*
-
-here some useful links.... 
-
+# *amd-pack*
 
 ## Overview
 
