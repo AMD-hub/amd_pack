@@ -4,7 +4,7 @@ setup(
     name='amd_pack',
     version='0.1',
     description='A Python package for aleatory and related utilities',
-    author='Your Name',
+    author='EL YOUSEFI AHMED (AMD RAIZEN)',
     author_email='your.email@example.com',
     url='https://github.com/AMD-hub/amd_pack',
     packages=find_packages(),

@@ -4,6 +4,8 @@ import aleatory.path.path as pt  # Assuming pt is a module containing Stochastic
 from aleatory.processes.base import BaseProcess
 from aleatory.transition.base import Euler1D
 from aleatory.path.path import *
+from scipy.optimize import minimize
+
 
 class DiffusionProcess1D(BaseProcess):
     """
@@ -16,7 +18,7 @@ class DiffusionProcess1D(BaseProcess):
         bm: Brownian motion object.
         method: Method for numerical simulation (Euler1D).
     """
-    def __init__(self, drift, diffusion, bm, time_end=1.0):
+    def __init__(self, drift, diffusion, bm):
         """
         Initializes the DiffusionProcess1D object.
 
@@ -26,12 +28,29 @@ class DiffusionProcess1D(BaseProcess):
             bm: Brownian motion object.
             time_end: End time of the simulation.
         """
-        super().__init__(bm.rng, time_end)
-        self.drift = drift
-        self.diffusion = diffusion
+        super().__init__(bm.rng, bm.t)
+        self._drift = drift
+        self._diffusion = diffusion
         self.bm = bm
         self.method = Euler1D(self.drift,self.diffusion)
         if bm.dim >1 : raise ValueError("In one dimensional process class you can use only one dimensional randomness process")
+
+    @property
+    def drift(self):
+        return self._drift
+    @drift.setter
+    def kappa(self, value):
+        self._drift = value
+        self.method.drift = value 
+
+    @property
+    def diffusion(self):
+        return self._diffusion
+    @diffusion.setter
+    def kappa(self, value):
+        self._diffusion = value
+        self.method.diffusion = value 
+
 
     def simulate_path(self,X0,time=None, column_names=None, num_scenarios=1) : 
         """
@@ -63,14 +82,21 @@ class DiffusionProcess1D(BaseProcess):
             paths[i, :, :] = self.method.next(state,dt[i-1],bm_paths_new[sub_iter*(i-1)+1:sub_iter*i+1,:,:]) .values
         return pt.StochasticProcessPath(time=time, values=paths, column_names=column_names)
     
-    def calibrate(self, path,method = 'MLE'):
+    def calibrate(self, path, method = 'MLE'):
         """
         Placeholder for calibration method.
 
         Args:
             path: Path data for calibration.
         """
-        pass 
+        if method == 'MLE' :
+            raise ValueError(f'The method {method} is not developped for this process')
+        elif method == 'OLS' :
+            raise ValueError(f'The method {method} is not developped for this process')
+        elif method == 'Exact' :
+            raise ValueError(f'The method {method} is not developped for this process')
+        else :
+            raise ValueError('Should provide one of these methods : [MLE, OLS, Exact]')
 
     def density(self, x0: float, xt: float | np.ndarray, t0: float, dt: float) -> float | np.ndarray : 
         """
@@ -86,8 +112,15 @@ class DiffusionProcess1D(BaseProcess):
             Density values corresponding to given inputs.
         """
         return self.method.density(x0,xt,t0,dt)
+    
+    def negLogLikeLihood(self,path : StochasticProcessPath) :
+        """
+        Evaluate the negative log likelihood for 1D processes.
 
-
+        :param path: the path of the data. 
+        :return: The negative log likelihood.
+        """
+        return self.method.negLogLikeLihood(path)
 
 class CKLSProcess(DiffusionProcess1D) :
     """
@@ -101,7 +134,7 @@ class CKLSProcess(DiffusionProcess1D) :
         sigma: Parameter for the diffusion coefficient.
         lambda_: Parameter for additional drift term.
     """
-    def __init__(self, kappa, b, gamma, sigma,bm, time_end=1):
+    def __init__(self, kappa, b, gamma, sigma,bm):
         """
         Initializes th CKLSProcess object.
 
@@ -116,18 +149,18 @@ class CKLSProcess(DiffusionProcess1D) :
         """
         drift = lambda t,x : -kappa*(x-b)
         diffusion = lambda t,x : sigma*(x**gamma)
-        super().__init__(drift, diffusion, bm, time_end)
-        self.kappa  = kappa
-        self.sigma  = sigma
-        self.b      = b
-        self.gamma  = gamma
+        super().__init__(drift, diffusion, bm)
+        self._kappa  = kappa
+        self._sigma  = sigma
+        self._b      = b
+        self._gamma  = gamma
 
     @property
     def kappa(self):
         return self._kappa
     @kappa.setter
     def kappa(self, value):
-        self.drift = lambda t,x : -value*(x-self.b)
+        self._drift = lambda t,x : -value*(x-self.b)
         self._kappa = value
 
     @property
@@ -135,7 +168,7 @@ class CKLSProcess(DiffusionProcess1D) :
         return self._b
     @b.setter
     def b(self, value):
-        self.drift = lambda t,x : -self.kappa*(x-value)
+        self._drift = lambda t,x : -self.kappa*(x-value)
         self._b = value
 
     @property
@@ -143,7 +176,7 @@ class CKLSProcess(DiffusionProcess1D) :
         return self._gamma
     @gamma.setter
     def gamma(self, value):
-        self.diffusion = lambda t,x : self.sigma*(x**value)
+        self._diffusion = lambda t,x : self.sigma*(x**value)
         self._gamma = value
 
     @property
@@ -151,14 +184,39 @@ class CKLSProcess(DiffusionProcess1D) :
         return self._sigma
     @sigma.setter
     def sigma(self, value):
-        self.diffusion = lambda t,x : value*(x**self.gamma)
+        self._diffusion = lambda t,x : value*(x**self.gamma)
         self._sigma = value
 
     def simulate_path(self, X0, time=None, column_names=None, num_scenarios=1):
         return super().simulate_path(X0, time, column_names, num_scenarios)
     
-    def calibrate(self, path):
-        return super().calibrate(path)
-    
+    def calibrate(self, path:StochasticProcessPath, method = 'MLE'):
+        """
+        Placeholder for calibration method.
+
+        Args:
+            path: Path data for calibration.
+        """
+        if method == 'MLE' :
+
+            def negative_log_likelihood(params) :
+                other = CKLSProcess(kappa=params[0],b=params[1],gamma=params[2],sigma=params[3],bm=self.bm)
+                return other.negLogLikeLihood(path)
+
+            params0 = np.array([self.kappa,self.b,self.gamma,self.sigma])
+            result = minimize(negative_log_likelihood, params0,  method='trust-constr')
+            return result
+
+        elif method == 'OLS' :
+            raise ValueError(f'The method {method} is not developped for this process yet')
+        elif method == 'Exact' :
+            raise ValueError(f'The method {method} is not developped for this process')
+        else :
+            raise ValueError('Should provide one of these methods : [MLE, OLS, Exact]')
+        
+
     def density(self, x0: float, xt: float | np.ndarray, t0: float, dt: float) -> float | np.ndarray:
         return super().density(x0, xt, t0, dt)
+
+    def negLogLikeLihood(self, path: pt.StochasticProcessPath):
+        return super().negLogLikeLihood(path)

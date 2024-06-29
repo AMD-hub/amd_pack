@@ -29,6 +29,8 @@ class Transition(ABC):
         This constructor is called automatically for any subclass of Transition.
         """
 
+        self.minprob = 0.0001
+
     @abstractmethod
     def density(self, x0: float, xt: Union[float, np.ndarray], t0: float, dt: float) -> Union[float, np.ndarray]:
         """
@@ -73,6 +75,20 @@ class Transition1D(Transition):
         :return: The probability density (same dimension as x0 and xt).
         """
         return super().density(x0, xt, t0, dt)
+    
+    def negLogLikeLihood(self,path : StochasticProcessPath) :
+        """
+        Evaluate the negative log likelihood for 1D processes.
+
+        :param path: the path of the data. 
+        :return: The negative log likelihood.
+        """
+        x_path  = path.values[:,0,0]
+        t_path  = path.time
+        dt_path = path.dt
+        return -np.sum([
+                np.log(max(self.minprob,self.density(x_path[i],x_path[i+1],t_path[i],dt_path[i]))) for i in range(len(x_path)-1)
+            ])
 
     def next(self, state : StochasticProcessState , dt: float, dW: StochasticProcessPath) -> StochasticProcessState:
         """
@@ -162,6 +178,12 @@ class Euler1D(Transition1D):
             t += dt_n
             if self.keep_positive : paths[paths <= 0] = 0
         return StochasticProcessState(time=state.time+dt,values=paths[0,:,:],column_names=state.column_names)
+    
+    
+    def negLogLikeLihood(self, path: StochasticProcessPath):
+        return super().negLogLikeLihood(path)
+
+
 
 class Milstein1D(Transition1D):
     """
