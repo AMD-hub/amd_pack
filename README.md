@@ -110,10 +110,3 @@ Calibrate the model using Maximum Likelihood Estimation (MLE):
 ```python
 model.calibrate(data, method='MLE')
 ```
-
-### Conclusion
-By following these steps, you can quickly set up and run a stochastic model, simulate data, and calibrate the model using `aleatory`. This guide provides a foundation for exploring more complex stochastic processes and calibration techniques.
-
----
-
-You can use this guide as a starting point and modify it as needed to fit your specific requirements or to include more detailed explanations and advanced topics.
